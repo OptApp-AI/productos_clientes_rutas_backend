@@ -1,0 +1,19 @@
+# Ignorar archivos de configuración de entorno
+.env
+.venv
+*.pyc
+_pycache_/
+
+# Ignorar archivos generados por el sistema
+.DS_Store
+Thumbs.db
+
+# Ignorar archivos de registro
+log/
+*.log
+
+# Ignorar archivos de base de datos
+*.sqlite3
+
+# Ignorar archivos de media
+static/
