@@ -12,17 +12,19 @@ from api.clientes.models import Ruta, Cliente
 # 1. LOS PRODUCTOS DE SALIDA A RUTA SE RETIRAN DEL STOCK SIEMPRE. NO IMPORTA EL STATUS
 # 2. EXISTEN LOS MISMOS TRES STATUS: PENDIENTE, REALIZADO, CANCELADO. SIEMPRE SE GENERA CON STATUS PENDIENTE
 # 3. EN GENERAL LOS CAMPOS SON SIMIILARES (ATIENDE, FECHA, OBSERVACIONES, ETC.)
-# 4. SOLO LOS ADMINISTRADORES PUEDEN PASAR EL STATUS DE PENDIENTE A REALIZADO O CANCELADO, O DE REALIZADO A CANCELADO. PUEDEN ESCOGER CANCELAR DE FORMA DIRECTA, PERO PARA PASAR EL STATUS A REALIZADO ES A TRAVES DE DEVOLUCIONES
 # 5. SE PUEDEN HACER DEVOLUCIONES. LAS DEVOLUCIONES LAS PUEDEN HACER CAJEROS (LUEGO VEMOS A LOS ADMIS)
-# 6. AL HACER ESTO SE GENERA UNA DEVOLUCION CON STATUS DE PENDIENTE. SOLO HASTA QUE EL ADMI CAMBIA SU STATUS A REALIZADO ES QUE SE REGRESAN LOS PRODUCTOS AL SOTCK
+# 6. AL HACER ESTO SE GENERA UNA DEVOLUCION CON STATUS DE PENDIENTE. SOLO HASTA QUE EL ADMI CAMBIA SU STATUS A REALIZADO ES QUE SE REGRESAN LOS PRODUCTOS AL STOCK
+# ESTA ES UNA PREGUNTA IMPORTANTE ¿DEBERIAN DE REGRESARSE LOS PRODUCTOS AL STOCK EN EL MOMENTO QUE EL CAJERO REALIZA LA DEVOLUCION, O ESPERAMOS HASTA QUE EL ADMIN LA AUTORIZA?
 # 7. CUANDO EL CAJERO ENTRE A LA SALIDARUTA, SOLO PUEDE DEVOLVER LOS PRODUCTOS CON STATUS DE CARGADO
 class SalidaRuta(models.Model):
+    ATIENDE = models.CharField(max_length=100)
     RUTA = models.ForeignKey(Ruta, on_delete=models.SET_NULL, null=True)
     FECHA = models.DateTimeField(auto_now=True)
-    ATIENDE = models.CharField(max_length=100)
 
-    # Aquí cambiar esto por un Empleado
+    # Aquí cambiar esto por un Empleado. PARA QUE QUIERES AL EMPLEADO, NECESITAS ACCEDER A ALGUN DATOS DEL EMPLEADO DESDE LA SALIDA RUTA
+    # CUANDO EL REPARTIDOR INICIE SESSION, COMO VA A HACERDER A LA SalidRuta. DEBERIA DE TENER SOLO UNA SalidaRuta con STATUS de pendiente o progreso, y es a traves de este campo que el va a acceder.
     REPARTIDOR = models.CharField(max_length=100)
+    # REPARTIDOR_NOMBRE
     # Si hubo una devolucion en esta salida a ruta el administrador va a hacer la devolucion aqui
     OBSERVACIONES = models.CharField(max_length=200)
     STATUS = models.CharField(
@@ -41,7 +43,7 @@ class SalidaRuta(models.Model):
     )
 
     def __str__(self):
-        # DESPUES HAY QUE CAMBIAR ESTO PORQUE SI SE BORRA EL ATIENDE O REPARTIDOR VAN A EXISTIR PROBLEMAS
+        # DESPUES HAY QUE CAMBIAR ESTO PORQUE SI SE BORRA EL ATIENDE O REPARTIDOR VAN A EXISTIR PROBLEMAS. nO EN REALIDAD PORQUE ATIENDE ES UN CHARFIELD, usar empleado_nombre EN LUGAR DE EMPLEADO, para uqe no haya problemas
         return f"{self.ATIENDE}, {self.REPARTIDOR}"
 
 
@@ -53,7 +55,6 @@ class SalidaRuta(models.Model):
 
 # De aqui se van hacia la venta o se regresan al stock mediante una devolucion/cancelacion
 # La devolucion es aqui
-# ESTOY ASUMIENDO QUE LOS REPARTIDOES NO APLICAN CORTESIA NI DESCUENTO ADISIONAL
 
 
 # PARA CREAR ESTA PARTE VOY A CREAR UNA INTERFAZ DE USUARIO DONDE PUEDO SELECCIONAR UN CLIENTE, SUS PRODUCTOS Y CON ESTO VOY MODIFICANDO LOS STATUS DE PRODUCTO Y CLIENTE
@@ -69,6 +70,7 @@ class ProductoSalidaRuta(models.Model):
     )
     # Aqui si usamos el objeto producto porque sera necesario acceder a este para hacer las devoluciones
     PRODUCTO_RUTA = models.ForeignKey(Producto, on_delete=models.CASCADE)
+    # PRODUCTO_NOMBRE POR SI SE BORRA EL PRODUCTO
     CANTIDAD_RUTA = models.IntegerField(validators=[MinValueValidator(1)])
     CANTIDAD_DISPONIBLE = models.IntegerField(validators=[MinValueValidator(0)])
     # SI CANCELAN LA SALIDARUTA LOS PRODUCTOS SE CANCELAN TAMBIEN. Una devolucion tambien ocasiona que los productos se cancelen
@@ -136,3 +138,6 @@ class DevolucionSalidaRuta(models.Model):
 
     def __str__(self):
         return f"{self.SALIDA_RUTA}, {self.CATIDAD_DEVOLUCION}"
+
+    # Cambiar esto por una instancia de Empleado. This ensures that the repartidor must exist in the Empleado
+    REPARTIDOR = models.CharField(max_length=200)
